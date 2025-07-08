@@ -1,6 +1,7 @@
 const express = require("express");
 const connectDB = require("./config/database");
-const User = require('./models/user')
+const User = require('./models/user');
+const { trusted } = require("mongoose");
 
 const app = express();
 
@@ -91,6 +92,64 @@ app.get("/feed", async (req, res) => {
     }
 });
 
+
+//update api 
+app.patch('/user/:id', async (req, res) =>{
+    const userId = req.params.id;
+    const updateData = req.body;
+
+    try {
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {new: true});
+
+        // console.log("Updated user :", updatedUser);
+
+        if(!updatedUser){
+           return  res.status(404).json({
+                statusCode: 404,
+                message: "User not found"
+            })
+        }
+
+        res.status(200).json({
+            statusCode: 200,
+            message: "User updated successfully",
+            data: updatedUser
+        })
+    } catch (err) {
+        res.status(500).json({
+            statusCode: 500,
+            message: "Error while fetching users!",
+            error: err.message
+        });
+    }
+})
+
+//delete api
+
+app.delete('/user/:id', async(req, res) =>{
+    try {
+        const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+        if(!deletedUser){
+            return res.status(404).json({
+                statusCode: 404,
+                message: "User not found"
+            })
+        }
+
+        res.status(200).json({
+            statusCode : 200,
+            message: "User deleted successfully",
+            deletedUser
+        })
+    } catch (err) {
+        res.status(500).json({
+            statusCode: 500,
+            message: "error while deleting user",
+            error: err.message
+        })
+    }
+})
 
 connectDB()
     .then(() => {
