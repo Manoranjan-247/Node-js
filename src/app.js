@@ -23,8 +23,8 @@ app.post("/signup", async (req, res) => {
     try {
         await user.save();
         // res.send("user added successfully!!!!!!");
-        res.status(200).json({
-            statusCode: 200,
+        res.status(201).json({
+            statusCode: 201,
             message: "User added successfully!!"
         })
     } catch (err) {
@@ -95,11 +95,27 @@ app.get("/feed", async (req, res) => {
 
 //update api 
 app.patch('/user/:id', async (req, res) =>{
-    const userId = req.params.id;
+    const userId = req.params?.id;
     const updateData = req.body;
 
     try {
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {new: true});
+        const ALLOWED_UPDATES = ["fullName", "age", "photoUrl", "skills", "about", "gender"];
+        const isUpdateAllowed = Object.keys(updateData).every((k) => ALLOWED_UPDATES.includes(k));
+        if(!isUpdateAllowed){
+            return res.status(400).json({
+                statusCode: 400,
+                message: "Updates not allowed"
+            })
+        };
+
+        if(updateData.skills.length > 10){
+            return res.status(400).json({
+                statusCode: 400,
+                message: "Skills can not be more than 10"
+            })
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {returnDocument: "after", runValidators: true, });
 
         // console.log("Updated user :", updatedUser);
 
