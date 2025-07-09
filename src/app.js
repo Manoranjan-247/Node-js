@@ -1,7 +1,7 @@
 const express = require("express");
 const connectDB = require("./config/database");
 const User = require('./models/user');
-const { trusted } = require("mongoose");
+const { validateSignUpData } = require('./utils/validation')
 
 const app = express();
 
@@ -11,16 +11,17 @@ app.use(express.json());
 // Signup api - post /signup
 app.post("/signup", async (req, res) => {
     console.log(req.body);
-    // const user = new User({
-    //     firstName: "Virat",
-    //     lastName: "Kohli",
-    //     emailId:"virat@gmail.com",
-    //     password:"Virat@123"
-    // })
 
-    const user = new User(req.body);
 
     try {
+        //validation of data
+        validateSignUpData(req);
+
+        const {fullName, emailId, password} = req.body;
+
+        //encrypt the password and store to the database
+        const passwordHash = await bcrypt.hash(password, 10);
+        const user = new User({fullName, emailId, password: passwordHash});
         await user.save();
         // res.send("user added successfully!!!!!!");
         res.status(201).json({
@@ -35,6 +36,34 @@ app.post("/signup", async (req, res) => {
         })
     }
 
+})
+
+
+//login api
+app.post("/login", async(req, res) =>{
+    try {
+        const {emailId, password} = req.body;
+
+        const user = await User.findOne({emailId : emailId});
+        if (!user || !bcrypt.compareSync(password, user.password)) {
+            return res.status(401).json({
+              statusCode: 401,
+              message: "Invalid email or password"
+            });
+          }
+
+        res.status(200).json({
+            statusCode: 200,
+            message: "Login successfull"
+        })
+          
+    } catch (error) {
+        res.status(500).json({
+            statusCode: 500,
+            message: "Error while login",
+            error: err.message
+        });
+    }
 })
 
 //get user by email
@@ -94,33 +123,33 @@ app.get("/feed", async (req, res) => {
 
 
 //update api 
-app.patch('/user/:id', async (req, res) =>{
+app.patch('/user/:id', async (req, res) => {
     const userId = req.params?.id;
     const updateData = req.body;
 
     try {
         const ALLOWED_UPDATES = ["fullName", "age", "photoUrl", "skills", "about", "gender"];
         const isUpdateAllowed = Object.keys(updateData).every((k) => ALLOWED_UPDATES.includes(k));
-        if(!isUpdateAllowed){
+        if (!isUpdateAllowed) {
             return res.status(400).json({
                 statusCode: 400,
                 message: "Updates not allowed"
             })
         };
 
-        if(updateData.skills.length > 10){
+        if (updateData.skills.length > 10) {
             return res.status(400).json({
                 statusCode: 400,
                 message: "Skills can not be more than 10"
             })
         }
 
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, {returnDocument: "after", runValidators: true, });
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { returnDocument: "after", runValidators: true, });
 
         // console.log("Updated user :", updatedUser);
 
-        if(!updatedUser){
-           return  res.status(404).json({
+        if (!updatedUser) {
+            return res.status(404).json({
                 statusCode: 404,
                 message: "User not found"
             })
@@ -142,11 +171,11 @@ app.patch('/user/:id', async (req, res) =>{
 
 //delete api
 
-app.delete('/user/:id', async(req, res) =>{
+app.delete('/user/:id', async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
 
-        if(!deletedUser){
+        if (!deletedUser) {
             return res.status(404).json({
                 statusCode: 404,
                 message: "User not found"
@@ -154,7 +183,7 @@ app.delete('/user/:id', async(req, res) =>{
         }
 
         res.status(200).json({
-            statusCode : 200,
+            statusCode: 200,
             message: "User deleted successfully",
             deletedUser
         })
