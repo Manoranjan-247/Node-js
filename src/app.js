@@ -70,7 +70,8 @@ app.post("/login", async (req, res) => {
     }
 
     // Compare password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await user.validatePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
         statusCode: 401,
@@ -79,16 +80,16 @@ app.post("/login", async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ _id: user.id }, "Manoranjan@247", {
-      expiresIn: "1d" // optional expiry
-    });
+    // const token2 = await jwt.sign({_id: user._id}, "Manoranjan@247", {expiresIn: "7d"});
+    const token = await user.getJWT();
 
     // Set token in cookie (optional)
+    // res.cookie("token", token);
     res.cookie("token", token, {
       httpOnly: true, // prevents access via JavaScript
       secure: process.env.NODE_ENV === "production", // send over HTTPS in prod
       sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 1 day
     });
 
     // Send success response
@@ -264,7 +265,12 @@ app.get('/profile', userAuth, async (req, res) => {
 //     }
 // })
 
+//connection request sending api
+app.post('/sendConnectionRequest', async(req, res) => {
+    console.log("sending connection request");
 
+    res.send("connection request send!")
+})
 
 connectDB()
     .then(() => {
