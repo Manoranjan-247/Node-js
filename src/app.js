@@ -49,7 +49,7 @@ app.post("/signup", async (req, res) => {
 //login api
 app.post("/login", async (req, res) => {
   try {
-    console.log(req.body)
+    // console.log(req.body)
     const { emailId, password } = req.body;
 
     // Check for empty inputs
