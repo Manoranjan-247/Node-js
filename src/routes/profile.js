@@ -49,12 +49,12 @@ profileRouter.patch("/edit", userAuth, async (req, res) => {
     }
 
     const loggedInUser = req.user;
-    console.log(loggedInUser);
+    // console.log(loggedInUser);
 
     // Object.keys(req.body).forEach((key) => (loggedInUser[key] = req.body[key]));
     loggedInUser.set(req.body);
 
-    console.log(loggedInUser);
+    // console.log(loggedInUser);
 
     await loggedInUser.save();
 
@@ -64,6 +64,12 @@ profileRouter.patch("/edit", userAuth, async (req, res) => {
       data: loggedInUser
     })
   } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).json({
+        statusCode: 400,
+        message: " Invalid edit request"
+      })
+    }
     res.status(500).json({
       statusCode: 500,
       message: "Something went wrong while updating profile!!",
