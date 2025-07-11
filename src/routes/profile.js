@@ -1,6 +1,6 @@
 const express = require('express');
 const { userAuth } = require('../middlewares/auth')
-
+const { validateProfileEditData } = require('../utils/validation')
 
 const profileRouter = express.Router();
 
@@ -33,15 +33,43 @@ profileRouter.get('/view', userAuth, async (req, res) => {
 profileRouter.patch("/edit", userAuth, async (req, res) => {
 
   try {
+
+    if (Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Request body cannot be empty"
+      })
+    }
     //data sanitization 
-    validatePrfileEditData(req);
-    
-  } catch (error) {
+    if (!validateProfileEditData(req)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: " Invalid edit request"
+      })
+    }
 
+    const loggedInUser = req.user;
+    console.log(loggedInUser);
+
+    // Object.keys(req.body).forEach((key) => (loggedInUser[key] = req.body[key]));
+    loggedInUser.set(req.body);
+
+    console.log(loggedInUser);
+
+    await loggedInUser.save();
+
+    res.status(200).json({
+      statusCode: 200,
+      message: "Profile updated successfully!",
+      data: loggedInUser
+    })
+  } catch (err) {
+    res.status(500).json({
+      statusCode: 500,
+      message: "Something went wrong while updating profile!!",
+      error: err.message
+    })
   }
-
-
-
 
 })
 
