@@ -24,6 +24,12 @@ const validateSignUpData = (req) => {
 };
 
 
+const validatePrfileEditData = (req)=>{
+    const {fullName, age, gender, photoUrl, skills, about} = req;
+
+    
+}
+
 module.exports = {
     validateSignUpData,
 }
