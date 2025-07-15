@@ -108,6 +108,7 @@ profileRouter.patch('/updatePassword', userAuth, async (req, res) => {
         message: "New password must be different from old password"
       });
     }
+    
     const passwordHash = await bcrypt.hash(newPassword, 10);
     
     loggedInUser.password = passwordHash;
