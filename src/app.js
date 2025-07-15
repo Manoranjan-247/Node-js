@@ -17,8 +17,8 @@ const userRouter = require('./routes/user')
 
 app.use('/', authRouter);
 app.use('/profile', profileRouter);
-app.use('/', requestRouter);
-app.use('/', userRouter);
+app.use('/request', requestRouter);
+app.use('/user', userRouter);
 
 
 connectDB()

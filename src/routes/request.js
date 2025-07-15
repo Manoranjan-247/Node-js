@@ -1,4 +1,4 @@
-
+const mongoose = require('mongoose');
 const express = require('express');
 const requestRouter = express.Router();
 const { userAuth } = require('../middlewares/auth')
@@ -6,19 +6,19 @@ const User = require('../models/user')
 const ConnectionRequest = require('../models/connectionRequest')
 
 //connection request sending api
-requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res) => {
+requestRouter.post("/send/:status/:toUserId", userAuth, async (req, res) => {
     try {
         const fromUserId = req.user._id;
         const toUserId = req.params.toUserId;
         const status = req.params.status;
 
         // Validate to userId is a mongoDB id
-        if (!mongoose.Types.ObjectId.isValid(toUserId)) {
-            return res.status(400).json({
-                statusCode: 400,
-                message: "Invalid user ID format"
-            });
-        }
+        // if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+        //     return res.status(400).json({
+        //         statusCode: 400,
+        //         message: "Invalid user ID format"
+        //     });
+        // }
 
         const allowedStatus = ["ignored", "interested"];
         if (!allowedStatus.includes(status)) {
@@ -30,12 +30,12 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
         }
 
         // check if fromUserId is same as toUserId
-        // if (fromUserId.equals(toUserId)) {
-        //     return res.status(400).json({
-        //         statusCode: 400,
-        //         message: "You can not send request to yourself",
-        //     })
-        // }
+        if (fromUserId.equals(toUserId)) {
+            return res.status(400).json({
+                statusCode: 400,
+                message: "You can not send request to yourself!",
+            })
+        }
 
         //user should be exist in db to before send  a connetion
         const user = await User.findById(toUserId);
@@ -68,7 +68,10 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
             fromUserId, toUserId, status
         })
 
-        const data = await newConnectionRequest.save();
+        const data = await newConnectionRequest.save()
+            .then(doc => doc.populate("fromUserId", ["fullName"]))
+            .then(doc => doc.populate("toUserId", ["fullName"]))
+
         res.status(200).json({
             statusCode: 200,
             message: "Connection request sent successfully",
@@ -80,12 +83,15 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
         return res.status(500).json({
             statusCode: 500,
             message: "Internal server error",
-            error: err.message
+            error: err.message,
+            errorName: err.name
         })
     }
 })
 
-requestRouter.post("/request/review/:status/:requestId", userAuth, async (req, res) => {
+
+//work of this api -> accept or reject incoming connection request
+requestRouter.post("/review/:status/:requestId", userAuth, async (req, res) => {
     try {
         const loggedInUser = req.user;
         const status = req.params.status;
@@ -103,7 +109,7 @@ requestRouter.post("/request/review/:status/:requestId", userAuth, async (req, r
         //check request id present in the db or not
         const currConnectionRequest = await ConnectionRequest.findOne({ _id: requestId, toUserId: loggedInUser._id, status: "interested" });
 
-        if(!currConnectionRequest){
+        if (!currConnectionRequest) {
             return res.status(404).json({
                 statusCode: 404,
                 message: "Connection request not found!"
@@ -111,14 +117,22 @@ requestRouter.post("/request/review/:status/:requestId", userAuth, async (req, r
         }
 
         currConnectionRequest.status = status;
-        const data = await currConnectionRequest.save();
+
+        const data = await currConnectionRequest.save()
+        .then(doc => doc.populate("fromUserId", ["fullName"]))
+        .then(doc => doc.populate("toUserId", ["fullName"]));
+
+        //we can write the above three or below three
+        // let data = await currConnectionRequest.save();
+        // data = await data.populate("fromUserId", "fullName");
+        // data = await data.populate("toUserId", "fullName");
 
         res.status(200).json({
-            statusCode : 200,
-            message: "connection request" + status,
+            statusCode: 200,
+            message: `Connection request has been ${status}`,
             data: data
         })
-    } catch (error) {
+    } catch (err) {
         console.error("Error sending connection request:", err);
         return res.status(500).json({
             statusCode: 500,

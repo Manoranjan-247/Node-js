@@ -7,15 +7,14 @@ const userRouter = express.Router();
 
 
 //user rrquest api-> get all the pending connection request for loggedIn use
-userRouter.get("/user/requests/received", userAuth, async (req, res) => {
+userRouter.get("/requests/received", userAuth, async (req, res) => {
     try {
         const loggedInUser = req.user;
-
 
         const connectionRequests = await ConnectionRequest.find({
             toUserId: loggedInUser._id,
             status: "interested"
-        }).populate("fromUserId", ["firstName", "lastName"]);
+        }).populate("fromUserId", ["fullName"]);
         // populate("fromUserId", "firstName lastName");
 
         res.status(200).json({
@@ -33,7 +32,7 @@ userRouter.get("/user/requests/received", userAuth, async (req, res) => {
 })
 
 //connections api -> the work of the api to see , loggedIn user's accepted request
-userRouter.get("/user/get-all-connections", userAuth, async (req, res) => {
+userRouter.get("/get-all-connections", userAuth, async (req, res) => {
     try {
         const loggedInUser = req.user;
 
@@ -42,8 +41,7 @@ userRouter.get("/user/get-all-connections", userAuth, async (req, res) => {
                 { toUserId: loggedInUser._id, status: "accepted" },
                 { fromUserId: loggedInUser._id, status: "accepted" },
             ]
-        }).populate("fromUserId", ["firstName", "lastName"])
-            .populate("toUserId", ["firstName", "lastName"])
+        }).populate("toUserId", ["fullName"])
 
 
         const data = connectionRequests.map((row) => {
@@ -100,8 +98,15 @@ userRouter.get("/feed", userAuth, async (req, res) => {
                 { _id: { $ne: loggedInUser._id } }
             ],
 
-        }).select("fromUserId toUserId").skip(skip).limit(limit);
+        }).select("_id fullName").skip(skip).limit(limit);
+        // .select("fromUserId toUserId").skip(skip).limit(limit);
         // console.log(users)
+
+        res.status(200).json({
+            statusCode: 200,
+            message: "Feed data fetched successfully",
+            data: users
+        })
 
     } catch (err) {
         console.error("Error sending connection request:", err);

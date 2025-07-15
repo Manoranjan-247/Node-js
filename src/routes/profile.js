@@ -80,7 +80,7 @@ profileRouter.patch("/edit", userAuth, async (req, res) => {
 
 })
 
-profileRouter.patch('/updatePassword', userAuth, async (req, res) => {
+profileRouter.patch('/update-password', userAuth, async (req, res) => {
   try {
     if (!validatePasswordData(req)) {
       return res.status(400).json({
