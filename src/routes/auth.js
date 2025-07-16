@@ -99,10 +99,13 @@ authRouter.post("/login", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 1 day
     });
 
+    
+
     // Send success response
     res.status(200).json({
       statusCode: 200,
       message: "Login successful",
+      data: user,
       token // optionally send in body if needed by frontend
     });
 
